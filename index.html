@@ -1,0 +1,2044 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="淼淼工作台" />
+<meta name="theme-color" content="#1f6f6c" />
+<link rel="apple-touch-icon" href="apple-touch-icon.png" />
+<link rel="icon" type="image/png" href="apple-touch-icon.png" />
+<link rel="manifest" href="manifest.json" />
+<title>淼淼的工作台</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", Arial, sans-serif; color: #1f2937; background: #f3f5f7; }
+  button { font-family: inherit; cursor: pointer; border: none; background: none; }
+  input { font-family: inherit; }
+
+  /* 整体布局 */
+  .app { max-width: 480px; margin: 0 auto; min-height: 100vh; background: #f3f5f7; padding-bottom: 90px; }
+
+  /* 顶部 Banner */
+  .top-banner {
+    background: linear-gradient(135deg, #2a8a87 0%, #1f6f6c 100%);
+    color: #fff;
+    padding: 18px 18px 26px;
+    border-radius: 0 0 22px 22px;
+    position: relative;
+  }
+  .top-status { display: flex; justify-content: space-between; align-items: center; font-size: 13px; opacity: 0.95; margin-bottom: 10px; }
+  .top-status .right { display: flex; gap: 6px; align-items: center; font-size: 14px; }
+  .globe-btn {
+    width: 38px; height: 38px; border-radius: 50%;
+    background: rgba(255,255,255,0.18);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; margin-top: -4px;
+  }
+  .top-title { font-size: 22px; font-weight: 700; margin-bottom: 16px; }
+  .progress-row { display: flex; align-items: center; gap: 14px; }
+  .progress-ring {
+    width: 64px; height: 64px; border-radius: 50%;
+    background: rgba(255,255,255,0.15);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; font-weight: 700; color: #fff;
+    border: 2px solid rgba(255,255,255,0.35);
+  }
+  .progress-info { flex: 1; }
+  .progress-info .big { font-size: 17px; font-weight: 600; margin-bottom: 4px; }
+  .progress-info .small { font-size: 12px; opacity: 0.85; }
+
+  /* 主内容区：左侧导航 + 右侧内容 */
+  .main { display: flex; gap: 12px; padding: 14px 12px 0; }
+  .sidebar {
+    width: 76px;
+    flex-shrink: 0;
+    display: flex; flex-direction: column; gap: 8px;
+    align-items: center;
+  }
+  .nav-item {
+    width: 100%;
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    padding: 8px 4px;
+    border-radius: 14px;
+    background: transparent;
+    transition: all 0.15s;
+    color: #6b7280;
+    font-size: 12px;
+  }
+  .nav-item .icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .nav-item.active { color: #1f6f6c; font-weight: 600; }
+  .nav-item.active .icon {
+    background: #1f6f6c;
+    color: #fff;
+    box-shadow: 0 4px 10px rgba(31,111,108,0.25);
+  }
+  .nav-item:hover .icon { transform: translateY(-1px); }
+
+  /* 右侧内容 */
+  .content { flex: 1; min-width: 0; }
+  .section-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 4px; }
+  .section-title { font-size: 18px; font-weight: 700; color: #111827; }
+  .section-sub { font-size: 12px; color: #6b7280; margin-top: 2px; }
+  .refresh-btn {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    color: #4b5563;
+    display: flex; align-items: center; gap: 4px;
+  }
+
+  /* 任务卡片 */
+  .task-card {
+    background: #fff;
+    border-radius: 14px;
+    padding: 14px;
+    margin-top: 12px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+    position: relative;
+  }
+  .task-card.completed { background: #f9fafb; opacity: 0.78; }
+  .task-card.completed .task-title { text-decoration: line-through; color: #9ca3af; }
+
+  .task-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .task-num {
+    width: 26px; height: 26px; border-radius: 50%;
+    background: #1f6f6c; color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700;
+    flex-shrink: 0;
+  }
+  .task-title { flex: 1; font-size: 15px; font-weight: 600; color: #111827; }
+  .task-time { font-size: 11px; color: #6b7280; background: #f3f4f6; padding: 2px 6px; border-radius: 4px; }
+  .task-status { font-size: 12px; color: #ef4444; font-weight: 500; }
+  .task-status.done { color: #10b981; }
+
+  .task-meta { font-size: 11px; color: #9ca3af; margin-bottom: 8px; padding-left: 36px; }
+
+  .check-btn {
+    display: flex; align-items: center; gap: 6px;
+    margin-left: auto;
+    padding: 5px 10px;
+    border-radius: 8px;
+    background: #f3f4f6;
+    color: #4b5563;
+    font-size: 12px;
+    transition: all 0.15s;
+  }
+  .check-btn:hover { background: #e5e7eb; }
+  .check-btn.checked { background: #d1fae5; color: #047857; }
+  .check-box {
+    width: 16px; height: 16px;
+    border: 1.5px solid #d1d5db;
+    border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    background: #fff;
+    transition: all 0.15s;
+  }
+  .check-btn.checked .check-box {
+    background: #10b981;
+    border-color: #10b981;
+    color: #fff;
+    font-size: 11px;
+  }
+
+  .delete-btn {
+    position: absolute;
+    top: 10px; right: 10px;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: transparent;
+    color: #d1d5db;
+    font-size: 14px;
+    display: none;
+    align-items: center; justify-content: center;
+  }
+  .task-card:hover .delete-btn,
+  .task-card.show-del .delete-btn { display: flex; }
+  .delete-btn:hover { background: #fee2e2; color: #ef4444; }
+
+  /* 新增任务按钮 / 输入区 */
+  .add-task-bar {
+    margin-top: 10px;
+    background: #fff;
+    border: 1.5px dashed #d1d5db;
+    border-radius: 12px;
+    padding: 10px 12px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .add-task-bar input {
+    flex: 1; border: none; outline: none;
+    font-size: 13px; color: #111827;
+    background: transparent;
+  }
+  .add-task-bar input::placeholder { color: #9ca3af; }
+  .add-btn {
+    background: #1f6f6c; color: #fff;
+    padding: 5px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .add-btn:disabled { background: #d1d5db; cursor: not-allowed; }
+
+  /* 提示卡 */
+  .hint-card {
+    background: #f0fdfa;
+    border: 1px solid #ccfbf1;
+    border-radius: 12px;
+    padding: 12px;
+    margin-top: 12px;
+    font-size: 12px;
+    color: #0f766e;
+    line-height: 1.6;
+  }
+
+  /* 底部 Tab 栏 */
+  .tab-bar {
+    position: fixed;
+    bottom: 0; left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 480px;
+    background: #fff;
+    border-top: 1px solid #e5e7eb;
+    display: flex;
+    padding: 8px 0 12px;
+    z-index: 50;
+  }
+  .tab-item {
+    flex: 1;
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    font-size: 11px;
+    color: #9ca3af;
+  }
+  .tab-item .tab-icon { font-size: 18px; }
+  .tab-item.active { color: #1f6f6c; }
+
+  /* 空状态 */
+  .empty {
+    text-align: center;
+    color: #9ca3af;
+    font-size: 13px;
+    padding: 30px 0;
+  }
+
+  /* 分类标签徽章（任务卡片里可选） */
+  .tag {
+    display: inline-block;
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 4px;
+    margin-right: 4px;
+    background: #f3f4f6;
+    color: #4b5563;
+  }
+  .tag.core { background: #d1fae5; color: #047857; }
+  .tag.tip { background: #dbeafe; color: #1e40af; }
+
+  .toast {
+    position: fixed;
+    top: 30px; left: 50%;
+    transform: translateX(-50%) translateY(-20px);
+    background: rgba(17,24,39,0.92);
+    color: #fff;
+    padding: 8px 16px;
+    border-radius: 999px;
+    font-size: 13px;
+    opacity: 0;
+    transition: all 0.25s;
+    z-index: 100;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* ====== 财务收支汇总卡片（财务管理页面内）====== */
+  .finance-summary {
+    display: flex; gap: 8px;
+    margin-top: 2px;
+  }
+  .fin-card {
+    flex: 1;
+    background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+    border: 1px solid #a7f3d0;
+    border-radius: 12px;
+    padding: 12px 14px;
+  }
+  .fin-card .label { font-size: 12px; color: #047857; margin-bottom: 4px; font-weight: 500; }
+  .fin-card .amount { font-size: 18px; font-weight: 700; color: #064e3b; }
+  .fin-card .sub { font-size: 11px; color: #059669; margin-top: 2px; }
+
+  /* ====== 任务编辑按钮 ====== */
+  .edit-btn {
+    background: #f3f4f6;
+    color: #4b5563;
+    padding: 5px 10px;
+    border-radius: 8px;
+    font-size: 12px;
+    display: flex; align-items: center; gap: 4px;
+    transition: all 0.15s;
+  }
+  .edit-btn:hover { background: #e5e7eb; }
+
+  /* 编辑模式表单 */
+  .edit-form { display: none; margin-top: 8px; }
+  .edit-form.active { display: block; }
+  .edit-form input {
+    width: 100%;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 13px;
+    margin-bottom: 6px;
+    outline: none;
+  }
+  .edit-form input:focus { border-color: #1f6f6c; }
+  .edit-form .row { display: flex; gap: 6px; }
+  .edit-form .row input { margin-bottom: 0; }
+  .edit-form .btns { display: flex; gap: 6px; margin-top: 6px; }
+  .edit-form .save {
+    background: #1f6f6c; color: #fff;
+    padding: 5px 14px; border-radius: 8px;
+    font-size: 12px;
+  }
+  .edit-form .cancel {
+    background: #f3f4f6; color: #4b5563;
+    padding: 5px 14px; border-radius: 8px;
+    font-size: 12px;
+  }
+
+  /* ====== 财务明细 ====== */
+  .expense-input-bar {
+    background: #fff;
+    border-radius: 12px;
+    padding: 10px;
+    margin-top: 10px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  }
+  .expense-input-bar .row {
+    display: flex; gap: 6px; align-items: center;
+  }
+  .expense-input-bar input {
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 13px;
+    outline: none;
+  }
+  .expense-input-bar input:focus { border-color: #1f6f6c; }
+  .expense-input-bar .name { flex: 1; }
+  .expense-input-bar .amt { width: 90px; text-align: right; }
+  .expense-input-bar .add-exp {
+    background: #1f6f6c; color: #fff;
+    padding: 6px 12px; border-radius: 8px;
+    font-size: 12px; font-weight: 500;
+  }
+
+  .expense-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-top: 8px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+    position: relative;
+  }
+  .expense-card .row {
+    display: flex; align-items: center; gap: 8px;
+  }
+  .expense-card .name { flex: 1; font-size: 14px; font-weight: 500; color: #111827; }
+  .expense-card .amt {
+    font-size: 16px; font-weight: 700; color: #ef4444;
+    white-space: nowrap;
+  }
+  .expense-card .meta { font-size: 11px; color: #9ca3af; margin-top: 4px; }
+  .expense-card .edit-inline {
+    display: none;
+    margin-top: 6px;
+    gap: 6px;
+  }
+  .expense-card.editing .edit-inline { display: flex; }
+  .expense-card.editing .row { display: none; }
+  .expense-card .edit-inline input {
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 12px;
+    outline: none;
+  }
+  .expense-card .edit-inline input:focus { border-color: #1f6f6c; }
+  .expense-card .edit-inline .e-name { flex: 1; }
+  .expense-card .edit-inline .e-amt { width: 80px; text-align: right; }
+  .expense-card .edit-inline button {
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+  }
+  .expense-card .edit-inline .ok { background: #1f6f6c; color: #fff; }
+  .expense-card .edit-inline .no { background: #f3f4f6; color: #4b5563; }
+  .expense-card .actions { display: flex; gap: 4px; }
+  .expense-card .actions button {
+    background: #f3f4f6;
+    color: #6b7280;
+    width: 26px; height: 26px;
+    border-radius: 6px;
+    font-size: 12px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .expense-card .actions button:hover { background: #e5e7eb; }
+
+  .fin-section-title {
+    font-size: 13px; font-weight: 600; color: #4b5563;
+    margin: 14px 0 6px;
+  }
+  .fin-total {
+    background: #fef3c7;
+    border: 1px solid #fde68a;
+    border-radius: 10px;
+    padding: 10px 14px;
+    margin-top: 10px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .fin-total .lbl { font-size: 13px; color: #92400e; }
+  .fin-total .val { font-size: 18px; font-weight: 700; color: #b91c1c; }
+
+  /* ====== 新闻列表 ====== */
+  .news-meta-bar {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 12px; color: #6b7280;
+    margin: 4px 0 8px;
+  }
+  .news-meta-bar .updated { color: #059669; }
+  .news-refresh-btn {
+    background: #ecfdf5; color: #047857;
+    border: 1px solid #a7f3d0;
+    padding: 4px 10px; border-radius: 999px;
+    font-size: 12px;
+  }
+  .news-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-top: 8px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+    transition: all 0.15s;
+    border-left: 3px solid #1f6f6c;
+  }
+  .news-card:active { transform: scale(0.99); }
+  .news-card .n-source {
+    display: inline-block;
+    font-size: 10px;
+    background: #ecfdf5; color: #047857;
+    padding: 2px 6px; border-radius: 4px;
+    margin-bottom: 6px;
+  }
+  .news-card .n-title {
+    font-size: 14px; font-weight: 600; color: #111827;
+    line-height: 1.5; margin-bottom: 4px;
+  }
+  .news-card .n-desc {
+    font-size: 12px; color: #6b7280;
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .news-card a.n-link {
+    display: inline-block;
+    margin-top: 6px;
+    font-size: 12px; color: #1f6f6c;
+    text-decoration: none;
+  }
+
+  /* ====== 历史记录按钮 ====== */
+  .history-btn {
+    background: #ecfdf5; color: #047857;
+    border: 1px solid #a7f3d0;
+    padding: 6px 10px; border-radius: 999px;
+    font-size: 12px;
+    display: flex; align-items: center; gap: 4px;
+  }
+
+  /* ====== 历史记录模态框 ====== */
+  .history-overlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 200;
+    display: none;
+    align-items: flex-end;
+    justify-content: center;
+  }
+  .history-overlay.active { display: flex; }
+  .history-sheet {
+    background: #fff;
+    width: 100%; max-width: 480px;
+    border-radius: 20px 20px 0 0;
+    max-height: 85vh;
+    overflow-y: auto;
+    animation: slideUp 0.25s ease;
+  }
+  @keyframes slideUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+  .history-head {
+    padding: 16px 18px 12px;
+    border-bottom: 1px solid #f3f4f6;
+    position: sticky; top: 0; background: #fff; z-index: 5;
+  }
+  .history-head .top-row {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 12px;
+  }
+  .history-head h3 { margin: 0; font-size: 18px; font-weight: 700; color: #111827; }
+  .history-close {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: #f3f4f6; color: #6b7280;
+    font-size: 16px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .date-picker-row {
+    display: flex; gap: 8px; align-items: center;
+  }
+  .date-picker-row input[type="date"] {
+    flex: 1;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 14px;
+    color: #111827;
+    outline: none;
+  }
+  .date-picker-row input:focus { border-color: #1f6f6c; }
+  .quick-dates { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+  .quick-dates button {
+    background: #f3f4f6; color: #4b5563;
+    padding: 4px 10px; border-radius: 999px;
+    font-size: 11px;
+  }
+  .quick-dates button.active {
+    background: #1f6f6c; color: #fff;
+  }
+  .history-summary {
+    margin: 12px 18px;
+    background: #f0fdfa;
+    border: 1px solid #ccfbf1;
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 13px; color: #0f766e;
+  }
+  .history-summary b { color: #064e3b; }
+  .history-list { padding: 0 18px 20px; }
+  .history-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid #f3f4f6;
+  }
+  .history-item .h-icon {
+    width: 22px; height: 22px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; flex-shrink: 0;
+  }
+  .history-item.done .h-icon { background: #10b981; color: #fff; }
+  .history-item.undone .h-icon { background: #f3f4f6; color: #9ca3af; border: 1.5px solid #d1d5db; }
+  .history-item .h-title { flex: 1; font-size: 14px; color: #111827; }
+  .history-item.done .h-title { text-decoration: line-through; color: #9ca3af; }
+  .history-item .h-cat {
+    font-size: 10px; padding: 2px 6px; border-radius: 4px;
+    background: #f3f4f6; color: #6b7280;
+  }
+  .history-empty {
+    text-align: center; color: #9ca3af;
+    font-size: 13px; padding: 30px 0;
+  }
+
+  /* ====== 每日厨艺练习（可爱治愈风）====== */
+  .cook-banner {
+    background: linear-gradient(135deg, #fff5f7 0%, #ffe4ec 100%);
+    border: 1px solid #fbcfe8;
+    border-radius: 16px;
+    padding: 16px;
+    margin-top: 10px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .cook-banner .emoji-row {
+    font-size: 22px;
+    margin-bottom: 6px;
+    letter-spacing: 4px;
+  }
+  .cook-banner h3 {
+    margin: 4px 0; font-size: 17px; font-weight: 700;
+    color: #9d174d;
+  }
+  .cook-banner p {
+    margin: 2px 0 0; font-size: 12px; color: #be185d;
+  }
+  .cook-stats {
+    display: flex; gap: 8px; margin-top: 12px;
+  }
+  .cook-stat-card {
+    flex: 1;
+    background: rgba(255,255,255,0.7);
+    border-radius: 12px;
+    padding: 10px;
+    text-align: center;
+  }
+  .cook-stat-card .num { font-size: 20px; font-weight: 700; color: #be185d; }
+  .cook-stat-card .lbl { font-size: 11px; color: #9d174d; margin-top: 2px; }
+
+  .cook-input-card {
+    background: #fff;
+    border: 1px dashed #f9a8d4;
+    border-radius: 14px;
+    padding: 14px;
+    margin-top: 10px;
+  }
+  .cook-input-card .title-row {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 14px; font-weight: 600; color: #9d174d;
+    margin-bottom: 10px;
+  }
+  .cook-input-card input[type="text"],
+  .cook-input-card textarea {
+    width: 100%;
+    border: 1px solid #fbcfe8;
+    border-radius: 10px;
+    padding: 8px 12px;
+    font-size: 13px;
+    outline: none;
+    margin-bottom: 8px;
+    font-family: inherit;
+    resize: vertical;
+  }
+  .cook-input-card input:focus,
+  .cook-input-card textarea:focus {
+    border-color: #ec4899;
+    background: #fff9fb;
+  }
+  .cook-input-card textarea { min-height: 60px; }
+  .cook-upload-area {
+    border: 2px dashed #f9a8d4;
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+    color: #be185d;
+    font-size: 12px;
+    cursor: pointer;
+    background: #fdf2f8;
+    margin-bottom: 8px;
+    position: relative;
+  }
+  .cook-upload-area:active { background: #fce7f3; }
+  .cook-upload-area .upload-icon { font-size: 28px; margin-bottom: 4px; }
+  .cook-upload-area input[type="file"] {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    opacity: 0; cursor: pointer;
+  }
+  .cook-upload-preview {
+    width: 100%; max-height: 200px;
+    object-fit: cover;
+    border-radius: 10px;
+    margin-bottom: 8px;
+    display: none;
+  }
+  .cook-upload-preview.show { display: block; }
+  .cook-save-btn {
+    width: 100%;
+    background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);
+    color: #fff;
+    padding: 10px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    box-shadow: 0 3px 8px rgba(236,72,153,0.25);
+  }
+
+  .cook-record {
+    background: #fff;
+    border: 1px solid #fce7f3;
+    border-radius: 14px;
+    padding: 14px;
+    margin-top: 10px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+    position: relative;
+  }
+  .cook-record .r-head {
+    display: flex; align-items: center; gap: 6px;
+    margin-bottom: 8px;
+  }
+  .cook-record .r-dish {
+    font-size: 15px; font-weight: 700; color: #9d174d;
+    flex: 1;
+  }
+  .cook-record .r-date {
+    font-size: 11px; color: #be185d;
+  }
+  .cook-record .r-photo {
+    width: 100%;
+    border-radius: 10px;
+    margin-bottom: 8px;
+    max-height: 240px;
+    object-fit: cover;
+  }
+  .cook-record .r-recipe {
+    background: #fdf2f8;
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 13px;
+    color: #831843;
+    line-height: 1.6;
+    white-space: pre-wrap;
+  }
+  .cook-record .r-recipe-label {
+    font-size: 11px; color: #be185d;
+    margin-bottom: 4px; font-weight: 600;
+  }
+  .cook-record .r-actions {
+    display: flex; justify-content: flex-end; gap: 6px;
+    margin-top: 8px;
+  }
+  .cook-record .r-actions button {
+    background: #fce7f3; color: #be185d;
+    width: 28px; height: 28px; border-radius: 8px;
+    font-size: 12px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .cook-section-title {
+    font-size: 14px; font-weight: 600; color: #9d174d;
+    margin: 16px 0 4px;
+  }
+
+  /* ====== 备忘录 ====== */
+  .memo-view, .punch-view { display: none; }
+  .memo-view.active, .punch-view.active { display: block; }
+  .memo-input-bar {
+    background: #fff;
+    border-radius: 12px;
+    padding: 10px;
+    margin-top: 10px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  }
+  .memo-input-bar textarea {
+    width: 100%; border: none; outline: none;
+    font-size: 13px; resize: vertical; min-height: 50px;
+    font-family: inherit; color: #111827;
+    background: transparent;
+  }
+  .memo-input-bar .row {
+    display: flex; gap: 6px; align-items: center; margin-top: 6px;
+  }
+  .memo-input-bar input[type="text"] {
+    flex: 1; border: 1px solid #e5e7eb; border-radius: 6px;
+    padding: 5px 10px; font-size: 12px; outline: none;
+  }
+  .memo-input-bar input:focus { border-color: #1f6f6c; }
+  .memo-input-bar .save-memo {
+    background: #1f6f6c; color: #fff;
+    padding: 6px 14px; border-radius: 8px;
+    font-size: 12px; font-weight: 500;
+  }
+  .memo-tags-bar {
+    display: flex; gap: 6px; margin-top 10px; overflow-x: auto;
+    padding: 8px 0; white-space: nowrap;
+  }
+  .memo-tags-bar button {
+    background: #f3f4f6; color: #4b5563;
+    padding: 4px 12px; border-radius: 999px;
+    font-size: 12px; flex-shrink: 0;
+  }
+  .memo-tags-bar button.active {
+    background: #1f6f6c; color: #fff;
+  }
+  .memo-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-top: 8px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+    position: relative;
+    border-left: 3px solid #1f6f6c;
+  }
+  .memo-card .m-tag {
+    display: inline-block;
+    font-size: 10px; padding: 2px 6px; border-radius: 4px;
+    background: #ecfdf5; color: #047857;
+    margin-bottom: 6px;
+  }
+  .memo-card .m-content {
+    font-size: 14px; color: #111827; line-height: 1.6;
+    white-space: pre-wrap; word-break: break-word;
+  }
+  .memo-card .m-meta {
+    font-size: 11px; color: #9ca3af; margin-top: 6px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .memo-card .m-actions { display: flex; gap: 4px; }
+  .memo-card .m-actions button {
+    background: #f3f4f6; color: #6b7280;
+    width: 24px; height: 24px; border-radius: 6px;
+    font-size: 11px;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  /* ====== 打卡专注视图 ====== */
+  .punch-progress {
+    background: #fff;
+    border-radius: 14px;
+    padding: 16px;
+    margin-top: 10px;
+    text-align: center;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  }
+  .punch-ring {
+    width: 100px; height: 100px; border-radius: 50%;
+    margin: 0 auto 10px;
+    background: conic-gradient(#10b981 0deg, #f3f4f6 0deg);
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+  }
+  .punch-ring::before {
+    content: ''; position: absolute;
+    width: 78px; height: 78px; border-radius: 50%;
+    background: #fff;
+  }
+  .punch-ring .pct {
+    position: relative; z-index: 1;
+    font-size: 22px; font-weight: 700; color: #1f6f6c;
+  }
+  .punch-stat { font-size: 13px; color: #6b7280; }
+  .punch-item {
+    background: #fff;
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-top: 8px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .punch-item.done { background: #f0fdfa; }
+  .punch-item .p-check {
+    width: 28px; height: 28px; border-radius: 50%;
+    border: 2px solid #d1d5db;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; color: #fff;
+    flex-shrink: 0;
+    transition: all 0.2s;
+  }
+  .punch-item.done .p-check {
+    background: #10b981; border-color: #10b981;
+  }
+  .punch-item .p-title { flex: 1; font-size: 14px; font-weight: 500; color: #111827; }
+  .punch-item.done .p-title { text-decoration: line-through; color: #9ca3af; }
+  .punch-item .p-cat {
+    font-size: 10px; padding: 2px 6px; border-radius: 4px;
+    background: #f3f4f6; color: #6b7280;
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- 顶部 Banner -->
+  <div class="top-banner">
+    <div class="top-status">
+      <span id="dateText">7月25日 · 周六</span>
+      <span class="right"><span id="timeText">21:24</span><span class="globe-btn">🌐</span></span>
+    </div>
+    <div class="top-title">淼淼的工作台</div>
+    <div class="progress-row">
+      <div class="progress-ring" id="progressRing">0%</div>
+      <div class="progress-info">
+        <div class="big" id="progressTitle">今日还未开始</div>
+        <div class="small">完成打卡解锁成就 ✨</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 主体 -->
+  <div class="main">
+    <!-- 左侧导航 -->
+    <div class="sidebar" id="sidebar"></div>
+
+    <!-- 右侧内容 -->
+    <div class="content">
+      <div class="section-header">
+        <div>
+          <div class="section-title" id="sectionTitle">全部任务</div>
+          <div class="section-sub" id="sectionSub">每日自动推送 · 共 0 个任务</div>
+        </div>
+        <div style="display:flex;gap:6px">
+          <button class="history-btn" id="historyBtn">📅 历史</button>
+          <button class="refresh-btn" id="refreshBtn">🔄 刷新</button>
+        </div>
+      </div>
+
+      <div id="taskList"></div>
+
+      <div class="add-task-bar">
+        <span style="color:#9ca3af;font-size:14px">＋</span>
+        <input type="text" id="newTaskInput" placeholder="新增任务，回车保存…" maxlength="50" />
+        <button class="add-btn" id="addTaskBtn">添加</button>
+      </div>
+
+      <div class="hint-card" id="hintCard">
+        📌 点击「✓ 打卡」可标记完成，长按或悬停任务卡片右上角可删除任务。
+      </div>
+    </div>
+  </div>
+
+  <!-- 备忘录视图 -->
+  <div class="memo-view" id="memoView">
+    <div style="padding: 14px 12px 0;">
+      <div class="section-header">
+        <div>
+          <div class="section-title">✏️ 备忘录</div>
+          <div class="section-sub" id="memoSub">按标签记录你的想法</div>
+        </div>
+      </div>
+      <div class="memo-input-bar">
+        <textarea id="memoContent" placeholder="写下你想记录的内容…"></textarea>
+        <div class="row">
+          <input type="text" id="memoTag" placeholder="标签（如：灵感/工作/生活）" maxlength="10" />
+          <button class="save-memo" id="saveMemoBtn">保存</button>
+        </div>
+      </div>
+      <div class="memo-tags-bar" id="memoTagsBar"></div>
+      <div id="memoList"></div>
+    </div>
+  </div>
+
+  <!-- 打卡专注视图 -->
+  <div class="punch-view" id="punchView">
+    <div style="padding: 14px 12px 0;">
+      <div class="section-header">
+        <div>
+          <div class="section-title">⏱ 今日打卡</div>
+          <div class="section-sub">快速完成今日任务</div>
+        </div>
+      </div>
+      <div class="punch-progress">
+        <div class="punch-ring" id="punchRing">
+          <div class="pct" id="punchPct">0%</div>
+        </div>
+        <div class="punch-stat" id="punchStat">今日还未开始</div>
+      </div>
+      <div id="punchList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 底部 Tab -->
+<div class="tab-bar">
+  <div class="tab-item active" data-tab="plan"><div class="tab-icon">📋</div>计划</div>
+  <div class="tab-item" data-tab="memo"><div class="tab-icon">✏️</div>备忘</div>
+  <div class="tab-item" data-tab="punch"><div class="tab-icon">⏱</div>打卡</div>
+  <div class="tab-item" data-tab="history"><div class="tab-icon">🕐</div>历史</div>
+</div>
+
+<div class="toast" id="toast">已添加</div>
+
+<!-- 历史记录模态框 -->
+<div class="history-overlay" id="historyOverlay">
+  <div class="history-sheet">
+    <div class="history-head">
+      <div class="top-row">
+        <h3>📅 历史记录</h3>
+        <button class="history-close" id="historyClose">×</button>
+      </div>
+      <div class="date-picker-row">
+        <input type="date" id="historyDate" />
+      </div>
+      <div class="quick-dates" id="quickDates"></div>
+    </div>
+    <div id="historyContent"></div>
+  </div>
+</div>
+
+<script>
+/* =========================
+   数据模型
+   每个分类下是任务列表：
+   { id, title, time, status, tags: [{text,type}] }
+   完成状态按"日"区分：completedDates = ['2026-07-27', ...]
+   ========================= */
+const todayKey = () => {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+};
+
+const CATEGORIES = [
+  { key: 'all',       name: '全部任务',     icon: '📋', desc: '所有任务汇总',  default: false },
+  { key: 'trade',     name: '外贸',         icon: '🌐', desc: '外贸业务相关',  default: false },
+  { key: 'news',      name: '全球新闻资讯', icon: '📰', desc: '每日全球资讯',  default: false },
+  { key: 'logistics', name: '中印物流',     icon: '🚚', desc: '客户开发与进度跟进', default: false },
+  { key: 'study',     name: '学习',         icon: '📚', desc: '学习提升',      default: false },
+  { key: 'cook',      name: '每日厨艺练习', icon: '🍳', desc: '每日一道菜',    default: false },
+  { key: 'finance',   name: '财务管理',     icon: '💰', desc: '每日支出记录',    default: false },
+  { key: 'daily',     name: '每日任务',     icon: '⭐', desc: '每天都要做',    default: true  },
+];
+
+const DEFAULT_TASKS = {
+  trade: [
+    { id: 't1', title: '回复客户询盘', time: '09:00', tags: [{text:'核心', type:'core'}] },
+    { id: 't2', title: '整理今日订单与报价单', time: '11:30', tags: [{text:'要点', type:'tip'}] },
+    { id: 't3', title: '跟进在途订单与回款', time: '15:00', tags: [] },
+  ],
+  news: [
+    { id: 'n1', title: '浏览全球热点新闻速报', time: '06:00', tags: [{text:'核心', type:'core'}, {text:'新闻头条', type:'tip'}] },
+    { id: 'n2', title: '关注经济外贸动态', time: '07:00', tags: [{text:'要点', type:'tip'}] },
+    { id: 'n3', title: '整理当日重要资讯笔记', time: '21:00', tags: [] },
+  ],
+  logistics: [
+    { id: 'l1', title: '今日开发新客户（记录数量）', time: '09:30', tags: [{text:'核心', type:'core'}, {text:'客户开发', type:'tip'}] },
+    { id: 'l2', title: '更新客户进度表（联系中/已报价/已成交）', time: '14:00', tags: [{text:'核心', type:'core'}, {text:'进度跟进', type:'tip'}] },
+    { id: 'l3', title: '跟进重点客户进度（印度方向）', time: '16:30', tags: [{text:'要点', type:'tip'}] },
+    { id: 'l4', title: '汇总今日开发数据：新增客户数 / 推进数', time: '18:00', tags: [] },
+  ],
+  study: [
+    { id: 's1', title: '阅读 1 篇行业文章', time: '08:00', tags: [] },
+    { id: 's2', title: '做学习笔记与复盘', time: '20:30', tags: [{text:'要点', type:'tip'}] },
+  ],
+  cook: [
+    { id: 'c1', title: '今日厨艺练习（拍照+笔记）', time: '18:00', tags: [{text:'核心', type:'core'}] },
+  ],
+  finance: [
+    { id: 'f1', title: '记录今日采购（买什么 · 花了多少钱）', time: '20:00', tags: [{text:'核心', type:'core'}, {text:'支出记录', type:'tip'}] },
+    { id: 'f2', title: '汇总今日总支出金额', time: '21:00', tags: [{text:'要点', type:'tip'}] },
+  ],
+  daily: [
+    { id: 'd1', title: '每天运动 30 分钟', time: '07:00', tags: [{text:'核心', type:'core'}] },
+    { id: 'd2', title: '西班牙语练习 30 分钟', time: '20:00', tags: [{text:'核心', type:'core'}] },
+  ],
+};
+
+const STORAGE_KEY = 'miranda_workbench_v4'; // v4：新增财务明细 + 任务编辑
+const LEGACY_KEYS = ['miranda_workbench_v3','miranda_workbench_v2','miranda_workbench_v1'];
+
+/* 加载/保存 */
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const s = JSON.parse(raw);
+      if (!s.expenses) s.expenses = []; // 兼容
+      return s;
+    }
+    // 从旧版本迁移：保留各分类已自建任务，补齐缺失的默认任务
+    for (const lk of LEGACY_KEYS) {
+      const legacy = localStorage.getItem(lk);
+      if (legacy) {
+        const old = JSON.parse(legacy);
+        if (old && old.tasks) {
+          const migrated = { tasks: {}, completed: old.completed || {}, expenses: [] };
+          Object.keys(DEFAULT_TASKS).forEach(k => {
+            if (k === 'logistics' || k === 'finance') {
+              migrated.tasks[k] = DEFAULT_TASKS[k].map(t => ({...t}));
+            } else {
+              const userTasks = (old.tasks[k] || []).filter(t =>
+                !DEFAULT_TASKS[k].some(d => d.id === t.id)
+              );
+              migrated.tasks[k] = [...DEFAULT_TASKS[k].map(t => ({...t})), ...userTasks];
+            }
+          });
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
+          return migrated;
+        }
+      }
+    }
+  } catch(e) {}
+  return null;
+}
+function saveState() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+let state = loadState();
+if (!state) {
+  // 初始化
+  state = { tasks: {}, completed: {}, expenses: [] }; // expenses: 财务明细
+  Object.keys(DEFAULT_TASKS).forEach(k => {
+    state.tasks[k] = DEFAULT_TASKS[k].map(t => ({...t}));
+  });
+  saveState();
+}
+if (!state.expenses) state.expenses = [];
+
+// 兼容老数据：若 default 缺失则补齐
+['trade','news','logistics','study','cook','finance','daily'].forEach(k => {
+  if (!state.tasks[k]) state.tasks[k] = DEFAULT_TASKS[k].map(t => ({...t}));
+});
+if (!state.completed) state.completed = {};
+
+/* 当前分类 */
+let currentCat = 'all';
+
+/* =========================
+   渲染
+   ========================= */
+function renderSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  sidebar.innerHTML = CATEGORIES.map(c => `
+    <button class="nav-item ${currentCat === c.key ? 'active' : ''}" data-cat="${c.key}">
+      <div class="icon">${c.icon}</div>
+      <div>${c.name}</div>
+    </button>
+  `).join('');
+  sidebar.querySelectorAll('.nav-item').forEach(btn => {
+    btn.addEventListener('click', () => {
+      currentCat = btn.dataset.cat;
+      renderSidebar();
+      renderTasks();
+    });
+  });
+}
+
+function getTasksByCat(cat) {
+  if (cat === 'all') {
+    // 汇总所有分类
+    const all = [];
+    ['trade','news','logistics','study','cook','finance','daily'].forEach(k => {
+      (state.tasks[k] || []).forEach(t => all.push({...t, _cat: k}));
+    });
+    return all;
+  }
+  return (state.tasks[cat] || []).map(t => ({...t, _cat: cat}));
+}
+
+function isCompletedToday(taskId) {
+  const arr = state.completed[taskId] || [];
+  return arr.includes(todayKey());
+}
+
+function toggleComplete(taskId) {
+  const arr = state.completed[taskId] || [];
+  const idx = arr.indexOf(todayKey());
+  if (idx >= 0) arr.splice(idx, 1);
+  else arr.push(todayKey());
+  state.completed[taskId] = arr;
+  saveState();
+}
+
+function deleteTask(cat, taskId) {
+  if (cat === 'all') {
+    // 在所有分类里找
+    for (const k of Object.keys(state.tasks)) {
+      state.tasks[k] = state.tasks[k].filter(t => t.id !== taskId);
+    }
+  } else {
+    state.tasks[cat] = state.tasks[cat].filter(t => t.id !== taskId);
+  }
+  delete state.completed[taskId];
+  saveState();
+}
+
+function addTask(cat, title) {
+  if (!title.trim()) return;
+  const id = 'u' + Date.now() + Math.floor(Math.random()*1000);
+  const newTask = {
+    id, title: title.trim(),
+    time: new Date().toTimeString().slice(0,5),
+    tags: [{text:'自建', type:'tip'}]
+  };
+  if (cat === 'all') cat = 'daily'; // "全部"下新增默认归到每日任务
+  if (!state.tasks[cat]) state.tasks[cat] = [];
+  state.tasks[cat].push(newTask);
+  saveState();
+}
+
+/* 编辑任务（标题 + 时间） */
+function updateTask(cat, taskId, newTitle, newTime) {
+  let list;
+  if (cat === 'all') {
+    // 在所有分类里找
+    for (const k of Object.keys(state.tasks)) {
+      const t = state.tasks[k].find(t => t.id === taskId);
+      if (t) { t.title = newTitle.trim(); if (newTime) t.time = newTime; break; }
+    }
+  } else {
+    const t = (state.tasks[cat] || []).find(t => t.id === taskId);
+    if (t) { t.title = newTitle.trim(); if (newTime) t.time = newTime; }
+  }
+  saveState();
+}
+
+/* =========================
+   财务明细
+   expenses: [{ id, name, amount, date: 'YYYY-MM-DD', time: 'HH:mm' }]
+   ========================= */
+function addExpense(name, amount) {
+  if (!name.trim() || isNaN(amount) || amount === '') return;
+  const d = new Date();
+  state.expenses.push({
+    id: 'e' + Date.now() + Math.floor(Math.random()*1000),
+    name: name.trim(),
+    amount: parseFloat(amount),
+    date: todayKey(),
+    time: String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0')
+  });
+  saveState();
+}
+function updateExpense(id, name, amount) {
+  const e = state.expenses.find(e => e.id === id);
+  if (e) {
+    e.name = name.trim();
+    e.amount = parseFloat(amount) || 0;
+    saveState();
+  }
+}
+function deleteExpense(id) {
+  state.expenses = state.expenses.filter(e => e.id !== id);
+  saveState();
+}
+function getTodayExpenses() {
+  return state.expenses.filter(e => e.date === todayKey());
+}
+function getMonthExpenses() {
+  const d = new Date();
+  const prefix = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+  return state.expenses.filter(e => e.date.startsWith(prefix));
+}
+function sumExpenses(list) {
+  return list.reduce((s, e) => s + (e.amount || 0), 0);
+}
+
+function renderTasks() {
+  const catInfo = CATEGORIES.find(c => c.key === currentCat);
+  document.getElementById('sectionTitle').textContent = catInfo.name;
+
+  // 财务管理：渲染专属的明细界面
+  if (currentCat === 'finance') {
+    renderFinanceView();
+    return;
+  }
+
+  // 全球新闻资讯：加载 news.json 自动推送
+  if (currentCat === 'news') {
+    renderNewsView();
+    return;
+  }
+
+  // 每日厨艺练习：专属的拍照打卡界面
+  if (currentCat === 'cook') {
+    renderCookView();
+    return;
+  }
+
+  const list = getTasksByCat(currentCat);
+  document.getElementById('sectionSub').textContent =
+    `${catInfo.desc} · 共 ${list.length} 个任务`;
+
+  const wrap = document.getElementById('taskList');
+  if (list.length === 0) {
+    wrap.innerHTML = `<div class="empty">暂无任务，点击下方添加你的第一个任务吧 👇</div>`;
+  } else {
+    wrap.innerHTML = list.map((t, i) => {
+      const done = isCompletedToday(t.id);
+      const tagsHtml = (t.tags || []).map(tg => `<span class="tag ${tg.type||''}">${tg.text}</span>`).join('');
+      const catBadge = currentCat === 'all' ? `<span class="tag">${CATEGORIES.find(c=>c.key===t._cat).icon} ${CATEGORIES.find(c=>c.key===t._cat).name}</span>` : '';
+      return `
+        <div class="task-card ${done ? 'completed show-del' : ''}" data-id="${t.id}" data-cat="${t._cat}">
+          <button class="delete-btn" title="删除任务">×</button>
+          <div class="task-head">
+            <div class="task-num">${i+1}</div>
+            <div class="task-title">${catBadge}${escapeHtml(t.title)}</div>
+            <span class="task-time">${t.time || ''}</span>
+          </div>
+          <div class="task-meta">
+            ID: ${t.id.slice(-6)} · ${done ? '<span style="color:#10b981">✓ 已完成</span>' : '⏳ 待完成'}
+            ${tagsHtml ? ' · ' + tagsHtml : ''}
+          </div>
+          <div style="display:flex;justify-content:flex-end;gap:8px">
+            <button class="edit-btn" data-action="edit">✏️ 编辑</button>
+            <button class="check-btn ${done ? 'checked' : ''}" data-action="check">
+              <span class="check-box">${done ? '✓' : ''}</span>
+              ${done ? '已打卡' : '打卡签到'}
+            </button>
+          </div>
+          <div class="edit-form" data-edit-form>
+            <input type="text" class="et-title" placeholder="任务名称" value="${escapeHtml(t.title)}" maxlength="50" />
+            <div class="row">
+              <input type="time" class="et-time" value="${t.time || ''}" />
+            </div>
+            <div class="btns">
+              <button class="save" data-action="save-edit">保存</button>
+              <button class="cancel" data-action="cancel-edit">取消</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    // 绑定
+    wrap.querySelectorAll('.task-card').forEach(card => {
+      const id = card.dataset.id;
+      const cat = card.dataset.cat;
+
+      // 打卡
+      card.querySelector('[data-action="check"]').addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleComplete(id);
+        renderTasks();
+        renderProgress();
+        showToast(isCompletedToday(id) ? '已打卡，太棒了！✨' : '已取消打卡');
+      });
+
+      // 编辑
+      card.querySelector('[data-action="edit"]').addEventListener('click', (e) => {
+        e.stopPropagation();
+        card.querySelector('.edit-form').classList.add('active');
+        card.querySelector('.et-title').focus();
+      });
+      card.querySelector('[data-action="cancel-edit"]').addEventListener('click', (e) => {
+        e.stopPropagation();
+        card.querySelector('.edit-form').classList.remove('active');
+      });
+      card.querySelector('[data-action="save-edit"]').addEventListener('click', (e) => {
+        e.stopPropagation();
+        const newTitle = card.querySelector('.et-title').value.trim();
+        const newTime = card.querySelector('.et-time').value;
+        if (!newTitle) { showToast('任务名称不能为空'); return; }
+        updateTask(cat, id, newTitle, newTime);
+        renderTasks();
+        showToast('已更新任务');
+      });
+
+      // 删除
+      card.querySelector('.delete-btn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (confirm('确定删除这个任务吗？')) {
+          deleteTask(cat, id);
+          renderTasks();
+          renderProgress();
+          showToast('已删除');
+        }
+      });
+
+      // 长按移动端也显示删除
+      let pressTimer;
+      card.addEventListener('touchstart', () => {
+        pressTimer = setTimeout(() => {
+          card.classList.add('show-del');
+        }, 500);
+      });
+      card.addEventListener('touchend', () => clearTimeout(pressTimer));
+    });
+  }
+}
+
+/* =========================
+   每日厨艺练习（拍照打卡 + 做法）
+   cookRecords: [{ id, dish, recipe, photo, date }]
+   ========================= */
+if (!state.cookRecords) state.cookRecords = [];
+let cookPreviewPhoto = '';
+
+function getTodayCookRecords() {
+  return state.cookRecords.filter(r => r.date.startsWith(todayKey()));
+}
+
+function getAllCookRecords() {
+  return state.cookRecords;
+}
+
+function addCookRecord(dish, recipe, photo) {
+  const d = new Date();
+  state.cookRecords.push({
+    id: 'ck' + Date.now() + Math.floor(Math.random()*1000),
+    dish: dish.trim(),
+    recipe: recipe.trim(),
+    photo: photo,
+    date: todayKey() + ' ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0')
+  });
+  saveState();
+}
+
+function deleteCookRecord(id) {
+  state.cookRecords = state.cookRecords.filter(r => r.id !== id);
+  saveState();
+}
+
+function handleCookPhoto(file) {
+  if (!file) return;
+  if (file.size > 3 * 1024 * 1024) {
+    showToast('图片太大啦，请选 3MB 以内的图 🥺');
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    cookPreviewPhoto = e.target.result;
+    const preview = document.getElementById('cookPreview');
+    preview.src = cookPreviewPhoto;
+    preview.classList.add('show');
+    showToast('照片已选好，记得点保存哦 📸');
+  };
+  reader.readAsDataURL(file);
+}
+
+function renderCookView() {
+  document.getElementById('sectionSub').textContent = '记录每一道温暖的小菜 🍲';
+
+  const todayList = getTodayCookRecords();
+  const allList = getAllCookRecords();
+  const totalDishes = allList.length;
+
+  const wrap = document.getElementById('taskList');
+  wrap.innerHTML = `
+    <div class="cook-banner">
+      <div class="emoji-row">🍳 🥘 🍲 🍰 🧁</div>
+      <h3>今日厨艺练习</h3>
+      <p>用心做一道菜，温暖自己和小伙伴 💕</p>
+      <div class="cook-stats">
+        <div class="cook-stat-card">
+          <div class="num">${todayList.length}</div>
+          <div class="lbl">今日已完成 🎉</div>
+        </div>
+        <div class="cook-stat-card">
+          <div class="num">${totalDishes}</div>
+          <div class="lbl">累计菜品 🍽️</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cook-input-card">
+      <div class="title-row">✨ 新增今日菜品</div>
+      <input type="text" id="cookDish" placeholder="🥢 菜名（如：番茄炒蛋）" maxlength="20" />
+      <textarea id="cookRecipe" placeholder="📝 写下做法步骤…&#10;1. 鸡蛋打散，番茄切块&#10;2. 热油下锅，先炒鸡蛋&#10;3. 加入番茄翻炒，调味即可" maxlength="500"></textarea>
+      <div class="cook-upload-area" id="cookUploadArea">
+        <div class="upload-icon">📷</div>
+        <div>点这里上传菜品照片 📸</div>
+        <input type="file" id="cookFile" accept="image/*" />
+      </div>
+      <img class="cook-upload-preview" id="cookPreview" />
+      <button class="cook-save-btn" id="cookSaveBtn">💖 保存这道菜</button>
+    </div>
+
+    ${todayList.length > 0 ? `
+      <div class="cook-section-title">🌷 今日作品（${todayList.length} 道）</div>
+      ${todayList.slice().reverse().map(r => renderCookRecordHTML(r)).join('')}
+    ` : ''}
+
+    ${allList.length > todayList.length ? `
+      <div class="cook-section-title">📚 历史作品</div>
+      ${allList.filter(r => !r.date.startsWith(todayKey())).slice().reverse().slice(0, 10).map(r => renderCookRecordHTML(r)).join('')}
+    ` : ''}
+  `;
+
+  // 绑定事件
+  document.getElementById('cookFile').addEventListener('change', (e) => {
+    handleCookPhoto(e.target.files[0]);
+  });
+  document.getElementById('cookSaveBtn').addEventListener('click', () => {
+    const dish = document.getElementById('cookDish').value.trim();
+    const recipe = document.getElementById('cookRecipe').value.trim();
+    if (!dish) { showToast('要给这道菜起个名字呀 🥺'); return; }
+    if (!recipe && !cookPreviewPhoto) { showToast('至少写个做法或传张照片呀 📸'); return; }
+    addCookRecord(dish, recipe, cookPreviewPhoto);
+    cookPreviewPhoto = '';
+    renderCookView();
+    showToast('记录成功！今天又是好好吃饭的一天 🎉');
+  });
+
+  // 绑定删除按钮
+  wrap.querySelectorAll('.cook-record').forEach(card => {
+    const id = card.dataset.id;
+    card.querySelector('[data-action="del"]').addEventListener('click', () => {
+      if (confirm('确定删除这道菜的记录吗？')) {
+        deleteCookRecord(id);
+        renderCookView();
+        showToast('已删除');
+      }
+    });
+  });
+}
+
+function renderCookRecordHTML(r) {
+  return `
+    <div class="cook-record" data-id="${r.id}">
+      <div class="r-head">
+        <span style="font-size:16px">🍽️</span>
+        <div class="r-dish">${escapeHtml(r.dish)}</div>
+        <div class="r-date">${r.date.split(' ')[1] || ''}</div>
+      </div>
+      ${r.photo ? `<img class="r-photo" src="${r.photo}" alt="${escapeHtml(r.dish)}" />` : ''}
+      ${r.recipe ? `
+        <div class="r-recipe-label">📝 做法步骤</div>
+        <div class="r-recipe">${escapeHtml(r.recipe)}</div>
+      ` : ''}
+      <div class="r-actions">
+        <button data-action="del" title="删除">🗑️</button>
+      </div>
+    </div>
+  `;
+}
+
+/* =========================
+   全球新闻资讯自动推送
+   ========================= */
+async function renderNewsView() {
+  document.getElementById('sectionSub').textContent = '自动推送 · 每 30 分钟更新';
+  const wrap = document.getElementById('taskList');
+  wrap.innerHTML = `<div class="empty">📰 正在加载最新全球新闻…</div>`;
+
+  try {
+    const res = await fetch('news.json?t=' + Date.now());
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    const news = data.news || [];
+
+    if (news.length === 0) {
+      wrap.innerHTML = `<div class="empty">📰 暂时没有获取到新闻，点右上角刷新重试</div>`;
+      return;
+    }
+
+    wrap.innerHTML = `
+      <div class="news-meta-bar">
+        <span>共 <b>${news.length}</b> 条 · 更新于 <span class="updated">${data.updated || '未知'}</span></span>
+        <button class="news-refresh-btn" id="newsRefreshBtn">🔄 刷新</button>
+      </div>
+      ${news.map(n => `
+        <div class="news-card">
+          <span class="n-source">${n.source || '新闻'} · ${n.tag || '资讯'}</span>
+          <div class="n-title">${escapeHtml(n.title)}</div>
+          ${n.desc ? `<div class="n-desc">${escapeHtml(n.desc)}</div>` : ''}
+          ${n.link ? `<a class="n-link" href="${escapeHtml(n.link)}" target="_blank">阅读全文 →</a>` : ''}
+        </div>
+      `).join('')}
+    `;
+
+    document.getElementById('newsRefreshBtn').addEventListener('click', () => {
+      renderNewsView();
+      showToast('正在刷新新闻…');
+    });
+  } catch(e) {
+    wrap.innerHTML = `
+      <div class="empty">📰 新闻加载失败：${escapeHtml(e.message)}</div>
+      <div style="text-align:center;margin-top:10px">
+        <button class="news-refresh-btn" onclick="renderNewsView()">🔄 重新加载</button>
+      </div>
+    `;
+  }
+}
+
+/* =========================
+   财务管理专属渲染
+   ========================= */
+function renderFinanceView() {
+  document.getElementById('sectionSub').textContent = '记录每笔支出 · 自动汇总';
+
+  const wrap = document.getElementById('taskList');
+  const todayList = getTodayExpenses();
+  const todayTotal = sumExpenses(todayList);
+  const monthList = getMonthExpenses();
+  const monthTotal = sumExpenses(monthList);
+
+  wrap.innerHTML = `
+    <div class="finance-summary">
+      <div class="fin-card">
+        <div class="label">今日支出</div>
+        <div class="amount">¥${todayTotal.toFixed(2)}</div>
+        <div class="sub">${todayList.length} 笔记录</div>
+      </div>
+      <div class="fin-card">
+        <div class="label">本月支出</div>
+        <div class="amount">¥${monthTotal.toFixed(2)}</div>
+        <div class="sub">${monthList.length} 笔记录</div>
+      </div>
+    </div>
+
+    <div class="expense-input-bar">
+      <div class="row">
+        <input type="text" class="name" id="expName" placeholder="买了什么？" maxlength="30" />
+        <input type="number" class="amt" id="expAmt" placeholder="¥金额" step="0.01" min="0" />
+        <button class="add-exp" id="addExpBtn">＋ 记账</button>
+      </div>
+    </div>
+
+    <div class="fin-section-title">📋 今日支出明细（${todayList.length} 笔）</div>
+    <div id="expList"></div>
+  `;
+
+  const expListEl = document.getElementById('expList');
+  if (todayList.length === 0) {
+    expListEl.innerHTML = `<div class="empty">今天还没有记账，记一笔吧 👆</div>`;
+  } else {
+    expListEl.innerHTML = todayList.slice().reverse().map(e => `
+      <div class="expense-card" data-id="${e.id}">
+        <div class="row">
+          <div class="name">${escapeHtml(e.name)}</div>
+          <div class="amt">-¥${e.amount.toFixed(2)}</div>
+          <div class="actions">
+            <button data-action="e-edit" title="编辑">✏️</button>
+            <button data-action="e-del" title="删除">🗑️</button>
+          </div>
+        </div>
+        <div class="meta">${e.time} · ${e.date}</div>
+        <div class="edit-inline">
+          <input type="text" class="e-name" value="${escapeHtml(e.name)}" maxlength="30" />
+          <input type="number" class="e-amt" value="${e.amount}" step="0.01" min="0" />
+          <button class="ok" data-action="e-save">✓</button>
+          <button class="no" data-action="e-cancel">✕</button>
+        </div>
+      </div>
+    `).join('');
+
+    expListEl.querySelectorAll('.expense-card').forEach(card => {
+      const id = card.dataset.id;
+      card.querySelector('[data-action="e-edit"]').addEventListener('click', () => {
+        card.classList.add('editing');
+        card.querySelector('.e-name').focus();
+      });
+      card.querySelector('[data-action="e-cancel"]').addEventListener('click', () => {
+        card.classList.remove('editing');
+      });
+      card.querySelector('[data-action="e-save"]').addEventListener('click', () => {
+        const n = card.querySelector('.e-name').value.trim();
+        const a = card.querySelector('.e-amt').value;
+        if (!n) { showToast('名称不能为空'); return; }
+        updateExpense(id, n, a);
+        renderFinanceView();
+        renderFinanceSummary();
+        showToast('已更新');
+      });
+      card.querySelector('[data-action="e-del"]').addEventListener('click', () => {
+        if (confirm('删除这笔支出？')) {
+          deleteExpense(id);
+          renderFinanceView();
+          renderFinanceSummary();
+          showToast('已删除');
+        }
+      });
+    });
+  }
+
+  // 绑定新增按钮
+  document.getElementById('addExpBtn').addEventListener('click', () => {
+    const name = document.getElementById('expName').value.trim();
+    const amt = document.getElementById('expAmt').value;
+    if (!name) { showToast('请输入买了什么'); return; }
+    if (!amt || isNaN(amt)) { showToast('请输入金额'); return; }
+    addExpense(name, amt);
+    renderFinanceView();
+    renderFinanceSummary();
+    showToast('已记账');
+  });
+  document.getElementById('expName').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') document.getElementById('expAmt').focus();
+  });
+  document.getElementById('expAmt').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') document.getElementById('addExpBtn').click();
+  });
+}
+
+/* 渲染顶部收支汇总 */
+// 顶部已不再显示收支汇总，财务汇总在财务管理页面内实时渲染
+function renderFinanceSummary() {}
+
+function renderProgress() {
+  const all = [];
+  Object.keys(state.tasks).forEach(k => state.tasks[k].forEach(t => all.push(t)));
+  const total = all.length;
+  const done = all.filter(t => isCompletedToday(t.id)).length;
+  const pct = total === 0 ? 0 : Math.round(done / total * 100);
+  document.getElementById('progressRing').textContent = pct + '%';
+  const title = pct === 0 ? '今日还未开始' : (pct === 100 ? '今日已全部完成 🎉' : `今日已完成 ${pct}%`);
+  document.getElementById('progressTitle').textContent = title;
+}
+
+function renderTime() {
+  const d = new Date();
+  const weekdays = ['日','一','二','三','四','五','六'];
+  document.getElementById('dateText').textContent =
+    `${d.getMonth()+1}月${d.getDate()}日 · 周${weekdays[d.getDay()]}`;
+  document.getElementById('timeText').textContent =
+    String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, m => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[m]));
+}
+
+let toastTimer;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 1800);
+}
+
+/* =========================
+   事件绑定
+   ========================= */
+document.getElementById('addTaskBtn').addEventListener('click', () => {
+  const input = document.getElementById('newTaskInput');
+  const v = input.value.trim();
+  if (!v) { showToast('请输入任务名称'); return; }
+  addTask(currentCat, v);
+  input.value = '';
+  renderTasks();
+  renderProgress();
+  showToast('已添加任务');
+});
+document.getElementById('newTaskInput').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') document.getElementById('addTaskBtn').click();
+});
+document.getElementById('refreshBtn').addEventListener('click', () => {
+  renderTasks();
+  renderProgress();
+  renderFinanceSummary();
+  renderTime();
+  showToast('已刷新');
+});
+
+// 切换分类时控制「新增任务」栏的显隐
+function updateAddBarVisibility() {
+  const bar = document.querySelector('.add-task-bar');
+  const hint = document.getElementById('hintCard');
+  // 财务/新闻/厨艺分类有自己的专属界面，隐藏通用新增栏
+  if (currentCat === 'finance' || currentCat === 'news' || currentCat === 'cook') {
+    bar.style.display = 'none';
+    if (hint) hint.style.display = 'none';
+  } else {
+    bar.style.display = 'flex';
+    if (hint) hint.style.display = 'block';
+  }
+}
+
+// 包装 renderTasks 以同步更新新增栏显隐
+const _origRenderTasks = renderTasks;
+renderTasks = function() {
+  _origRenderTasks();
+  updateAddBarVisibility();
+};
+
+/* =========================
+   历史记录功能
+   ========================= */
+function isCompletedOnDate(taskId, dateKey) {
+  const arr = state.completed[taskId] || [];
+  return arr.includes(dateKey);
+}
+
+// 获取某一天"当时"的任务快照（用当前任务列表 + 那天的打卡数据）
+// 说明：若后来增删了任务，历史里以当前任务清单为准，只反映那天的完成情况
+function getHistoryForDate(dateKey) {
+  const cats = ['trade','news','logistics','study','cook','finance','daily'];
+  const items = [];
+  cats.forEach(k => {
+    (state.tasks[k] || []).forEach(t => {
+      items.push({
+        id: t.id,
+        title: t.title,
+        time: t.time,
+        cat: k,
+        catName: CATEGORIES.find(c => c.key === k).name,
+        catIcon: CATEGORIES.find(c => c.key === k).icon,
+        done: isCompletedOnDate(t.id, dateKey)
+      });
+    });
+  });
+  return items;
+}
+
+function formatDateKey(d) {
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+function renderHistory(dateKey) {
+  const items = getHistoryForDate(dateKey);
+  const doneCount = items.filter(i => i.done).length;
+  const totalCount = items.length;
+  const pct = totalCount === 0 ? 0 : Math.round(doneCount / totalCount * 100);
+  const isToday = dateKey === todayKey();
+
+  // 按分类分组
+  const grouped = {};
+  items.forEach(i => {
+    if (!grouped[i.cat]) grouped[i.cat] = [];
+    grouped[i.cat].push(i);
+  });
+
+  const content = document.getElementById('historyContent');
+
+  let html = `
+    <div class="history-summary">
+      ${isToday ? '📍 今天' : '📅 ' + dateKey} · 共 <b>${totalCount}</b> 个任务 · 完成 <b>${doneCount}</b> 个 · 完成率 <b>${pct}%</b>
+    </div>
+  `;
+
+  if (totalCount === 0) {
+    html += `<div class="history-empty">该日期没有任务记录</div>`;
+  } else {
+    html += `<div class="history-list">`;
+    Object.keys(grouped).forEach(cat => {
+      const catItems = grouped[cat];
+      const catInfo = CATEGORIES.find(c => c.key === cat);
+      const catDone = catItems.filter(i => i.done).length;
+      html += `
+        <div style="font-size:12px;font-weight:600;color:#4b5563;margin:14px 0 4px;">
+          ${catInfo.icon} ${catInfo.name}（${catDone}/${catItems.length}）
+        </div>
+      `;
+      catItems.forEach(i => {
+        html += `
+          <div class="history-item ${i.done ? 'done' : 'undone'}">
+            <div class="h-icon">${i.done ? '✓' : ''}</div>
+            <div class="h-title">${escapeHtml(i.title)}</div>
+            <span class="h-cat">${i.time || ''}</span>
+          </div>
+        `;
+      });
+    });
+    html += `</div>`;
+  }
+
+  content.innerHTML = html;
+}
+
+function openHistory() {
+  // 默认显示今天
+  const today = todayKey();
+  document.getElementById('historyDate').value = today;
+  renderQuickDates(today);
+  renderHistory(today);
+  document.getElementById('historyOverlay').classList.add('active');
+}
+
+function closeHistory() {
+  document.getElementById('historyOverlay').classList.remove('active');
+}
+
+function renderQuickDates(activeKey) {
+  const wrap = document.getElementById('quickDates');
+  const labels = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const key = formatDateKey(d);
+    const label = i === 0 ? '今天' : i === 1 ? '昨天' : `${d.getMonth()+1}月${d.getDate()}日`;
+    labels.push({ key, label, active: key === activeKey });
+  }
+  wrap.innerHTML = labels.map(l =>
+    `<button class="${l.active ? 'active' : ''}" data-date="${l.key}">${l.label}</button>`
+  ).join('');
+  wrap.querySelectorAll('button').forEach(b => {
+    b.addEventListener('click', () => {
+      document.getElementById('historyDate').value = b.dataset.date;
+      renderQuickDates(b.dataset.date);
+      renderHistory(b.dataset.date);
+    });
+  });
+}
+
+/* 历史按钮事件 */
+document.getElementById('historyBtn').addEventListener('click', openHistory);
+document.getElementById('historyClose').addEventListener('click', closeHistory);
+document.getElementById('historyOverlay').addEventListener('click', (e) => {
+  if (e.target.id === 'historyOverlay') closeHistory();
+});
+document.getElementById('historyDate').addEventListener('change', (e) => {
+  renderQuickDates(e.target.value);
+  renderHistory(e.target.value);
+});
+
+/* =========================
+   底部 Tab 视图切换
+   ========================= */
+let currentTab = 'plan';
+function switchTab(tab) {
+  currentTab = tab;
+  // 切换底部高亮
+  document.querySelectorAll('.tab-item').forEach(t => {
+    t.classList.toggle('active', t.dataset.tab === tab);
+  });
+  // 切换主内容区显隐
+  const planView = document.querySelector('.main');
+  const memoView = document.getElementById('memoView');
+  const punchView = document.getElementById('punchView');
+
+  planView.style.display = (tab === 'plan') ? 'flex' : 'none';
+  memoView.classList.toggle('active', tab === 'memo');
+  punchView.classList.toggle('active', tab === 'punch');
+
+  if (tab === 'memo') renderMemoView();
+  if (tab === 'punch') renderPunchView();
+  if (tab === 'history') openHistory();
+}
+
+document.querySelectorAll('.tab-item').forEach(t => {
+  t.addEventListener('click', () => switchTab(t.dataset.tab));
+});
+
+/* =========================
+   备忘录功能
+   memos: [{ id, content, tag, date }]
+   ========================= */
+if (!state.memos) state.memos = [];
+let currentMemoTag = 'all';
+
+function saveMemo() {
+  const content = document.getElementById('memoContent').value.trim();
+  const tag = document.getElementById('memoTag').value.trim() || '未分类';
+  if (!content) { showToast('请输入内容'); return; }
+  const d = new Date();
+  state.memos.push({
+    id: 'm' + Date.now() + Math.floor(Math.random()*1000),
+    content, tag,
+    date: todayKey() + ' ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0')
+  });
+  saveState();
+  document.getElementById('memoContent').value = '';
+  document.getElementById('memoTag').value = '';
+  renderMemoView();
+  showToast('已保存备忘');
+}
+
+function deleteMemo(id) {
+  state.memos = state.memos.filter(m => m.id !== id);
+  saveState();
+  renderMemoView();
+  showToast('已删除');
+}
+
+function editMemo(id) {
+  const m = state.memos.find(m => m.id === id);
+  if (!m) return;
+  document.getElementById('memoContent').value = m.content;
+  document.getElementById('memoTag').value = m.tag;
+  deleteMemo(id);
+  document.getElementById('memoContent').focus();
+  showToast('编辑模式，修改后点保存');
+}
+
+function getMemoTags() {
+  const tags = ['all'];
+  state.memos.forEach(m => { if (!tags.includes(m.tag)) tags.push(m.tag); });
+  return tags;
+}
+
+function renderMemoView() {
+  const tags = getMemoTags();
+  const tagBar = document.getElementById('memoTagsBar');
+  tagBar.innerHTML = tags.map(t =>
+    `<button class="${currentMemoTag === t ? 'active' : ''}" data-tag="${escapeHtml(t)}">${t === 'all' ? '全部' : escapeHtml(t)}</button>`
+  ).join('');
+  tagBar.querySelectorAll('button').forEach(b => {
+    b.addEventListener('click', () => {
+      currentMemoTag = b.dataset.tag;
+      renderMemoView();
+    });
+  });
+
+  const list = currentMemoTag === 'all' ? state.memos : state.memos.filter(m => m.tag === currentMemoTag);
+  document.getElementById('memoSub').textContent = `共 ${list.length} 条备忘`;
+
+  const wrap = document.getElementById('memoList');
+  if (list.length === 0) {
+    wrap.innerHTML = `<div class="empty">还没有备忘，写下第一条吧 👆</div>`;
+  } else {
+    wrap.innerHTML = list.slice().reverse().map(m => `
+      <div class="memo-card">
+        <span class="m-tag">#${escapeHtml(m.tag)}</span>
+        <div class="m-content">${escapeHtml(m.content)}</div>
+        <div class="m-meta">
+          <span>${m.date}</span>
+          <div class="m-actions">
+            <button data-action="edit" title="编辑">✏️</button>
+            <button data-action="del" title="删除">🗑️</button>
+          </div>
+        </div>
+      </div>
+    `).join('');
+    wrap.querySelectorAll('.memo-card').forEach((card, idx) => {
+      const m = list.slice().reverse()[idx];
+      card.querySelector('[data-action="edit"]').addEventListener('click', () => editMemo(m.id));
+      card.querySelector('[data-action="del"]').addEventListener('click', () => {
+        if (confirm('删除这条备忘？')) deleteMemo(m.id);
+      });
+    });
+  }
+}
+
+document.getElementById('saveMemoBtn').addEventListener('click', saveMemo);
+
+/* =========================
+   打卡专注视图
+   ========================= */
+function renderPunchView() {
+  const cats = ['daily','trade','logistics','study','cook','news','finance'];
+  const items = [];
+  cats.forEach(k => {
+    (state.tasks[k] || []).forEach(t => {
+      items.push({ ...t, cat: k, catName: CATEGORIES.find(c=>c.key===k).name, catIcon: CATEGORIES.find(c=>c.key===k).icon, done: isCompletedToday(t.id) });
+    });
+  });
+  const total = items.length;
+  const done = items.filter(i => i.done).length;
+  const pct = total === 0 ? 0 : Math.round(done / total * 100);
+  const deg = Math.round(pct * 3.6);
+
+  // 更新环形进度
+  const ring = document.getElementById('punchRing');
+  ring.style.background = `conic-gradient(#10b981 ${deg}deg, #f3f4f6 ${deg}deg)`;
+  document.getElementById('punchPct').textContent = pct + '%';
+  document.getElementById('punchStat').textContent =
+    pct === 0 ? '今日还未开始，加油！💪' :
+    pct === 100 ? '今日全部完成 🎉 太棒了！' :
+    `已完成 ${done}/${total} 个任务，继续！`;
+
+  const wrap = document.getElementById('punchList');
+  if (total === 0) {
+    wrap.innerHTML = `<div class="empty">没有任务，去计划里添加吧 👇</div>`;
+    return;
+  }
+  // 按分类分组
+  const grouped = {};
+  items.forEach(i => { if (!grouped[i.cat]) grouped[i.cat] = []; grouped[i.cat].push(i); });
+
+  wrap.innerHTML = Object.keys(grouped).map(cat => {
+    const catInfo = CATEGORIES.find(c => c.key === cat);
+    return `
+      <div style="font-size:12px;font-weight:600;color:#4b5563;margin:14px 0 4px;">
+        ${catInfo.icon} ${catInfo.name}
+      </div>
+      ${grouped[cat].map(i => `
+        <div class="punch-item ${i.done ? 'done' : ''}" data-id="${i.id}">
+          <div class="p-check">${i.done ? '✓' : ''}</div>
+          <div class="p-title">${escapeHtml(i.title)}</div>
+        </div>
+      `).join('')}
+    `;
+  }).join('');
+
+  wrap.querySelectorAll('.punch-item').forEach(item => {
+    item.addEventListener('click', () => {
+      const id = item.dataset.id;
+      toggleComplete(id);
+      renderPunchView();
+      renderProgress();
+      showToast(isCompletedToday(id) ? '打卡成功！✨' : '已取消打卡');
+    });
+  });
+}
+
+/* 初始化 */
+renderSidebar();
+renderTasks();
+renderProgress();
+renderFinanceSummary();
+renderTime();
+setInterval(renderTime, 30000);
+</script>
+</body>
+</html>
