@@ -542,7 +542,12 @@
     display: flex; align-items: center; gap: 10px;
     padding: 10px 0;
     border-bottom: 1px solid #f3f4f6;
+    cursor: pointer;
+    transition: background 0.15s;
+    border-radius: 6px;
+    padding-left: 6px; padding-right: 6px;
   }
+  .history-item:active { background: #f9fafb; }
   .history-item .h-icon {
     width: 22px; height: 22px; border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
@@ -1730,6 +1735,16 @@ function isCompletedOnDate(taskId, dateKey) {
   return arr.includes(dateKey);
 }
 
+// 按指定日期切换打卡状态（支持历史补卡/取消）
+function toggleCompleteOnDate(taskId, dateKey) {
+  const arr = state.completed[taskId] || [];
+  const idx = arr.indexOf(dateKey);
+  if (idx >= 0) arr.splice(idx, 1);
+  else arr.push(dateKey);
+  state.completed[taskId] = arr;
+  saveState();
+}
+
 // 获取某一天"当时"的任务快照（用当前任务列表 + 那天的打卡数据）
 // 说明：若后来增删了任务，历史里以当前任务清单为准，只反映那天的完成情况
 function getHistoryForDate(dateKey) {
@@ -1774,6 +1789,7 @@ function renderHistory(dateKey) {
   let html = `
     <div class="history-summary">
       ${isToday ? '📍 今天' : '📅 ' + dateKey} · 共 <b>${totalCount}</b> 个任务 · 完成 <b>${doneCount}</b> 个 · 完成率 <b>${pct}%</b>
+      <div style="font-size:11px;color:#6b7280;margin-top:4px;font-weight:400;">👆 点击任务可补卡 / 取消打卡</div>
     </div>
   `;
 
@@ -1792,7 +1808,7 @@ function renderHistory(dateKey) {
       `;
       catItems.forEach(i => {
         html += `
-          <div class="history-item ${i.done ? 'done' : 'undone'}">
+          <div class="history-item ${i.done ? 'done' : 'undone'}" data-id="${i.id}" style="cursor:pointer;">
             <div class="h-icon">${i.done ? '✓' : ''}</div>
             <div class="h-title">${escapeHtml(i.title)}</div>
             <span class="h-cat">${i.time || ''}</span>
@@ -1804,6 +1820,18 @@ function renderHistory(dateKey) {
   }
 
   content.innerHTML = html;
+
+  // 绑定点击切换打卡状态
+  content.querySelectorAll('.history-item').forEach(item => {
+    item.addEventListener('click', () => {
+      const id = item.dataset.id;
+      toggleCompleteOnDate(id, dateKey);
+      renderHistory(dateKey); // 重新渲染当前日期
+      renderProgress(); // 同步顶部进度
+      const nowDone = isCompletedOnDate(id, dateKey);
+      showToast(nowDone ? '已补卡完成 ✓' : '已取消打卡');
+    });
+  });
 }
 
 function openHistory() {
