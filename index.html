@@ -49,6 +49,58 @@
   .progress-info .big { font-size: 17px; font-weight: 600; margin-bottom: 4px; }
   .progress-info .small { font-size: 12px; opacity: 0.85; }
 
+  /* ====== 日期切换器 ====== */
+  .date-switcher {
+    display: flex; align-items: center; gap: 8px;
+    margin-top: 14px;
+    background: rgba(255,255,255,0.16);
+    border-radius: 10px;
+    padding: 6px 10px;
+  }
+  .date-switcher .ds-label { font-size: 12px; opacity: 0.9; }
+  .date-switcher input[type="date"] {
+    flex: 1;
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.3);
+    border-radius: 6px;
+    padding: 4px 8px;
+    color: #fff;
+    font-size: 12px;
+    outline: none;
+    color-scheme: dark;
+  }
+  .date-switcher input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+    opacity: 0.7;
+    cursor: pointer;
+  }
+  .date-switcher .ds-btn {
+    background: rgba(255,255,255,0.2);
+    color: #fff;
+    width: 26px; height: 26px;
+    border-radius: 6px;
+    font-size: 14px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .date-switcher .ds-btn:active { background: rgba(255,255,255,0.3); }
+  .date-switcher .ds-today {
+    background: rgba(255,255,255,0.25);
+    color: #fff;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+  }
+  .viewing-past-banner {
+    background: rgba(255,255,255,0.15);
+    border-radius: 8px;
+    padding: 6px 12px;
+    margin-top: 8px;
+    font-size: 12px;
+    text-align: center;
+    display: none;
+  }
+  .viewing-past-banner.show { display: block; }
+
   /* 主内容区：左侧导航 + 右侧内容 */
   .main { display: flex; gap: 12px; padding: 14px 12px 0; }
   .sidebar {
@@ -866,6 +918,17 @@
         <div class="small">完成打卡解锁成就 ✨</div>
       </div>
     </div>
+    <!-- 日期切换器：切换查看/编辑任意日期 -->
+    <div class="date-switcher">
+      <span class="ds-label">📅 查看</span>
+      <button class="ds-btn" id="dsPrev" title="前一天">‹</button>
+      <input type="date" id="dsDate" />
+      <button class="ds-btn" id="dsNext" title="后一天">›</button>
+      <button class="ds-today" id="dsToday">今天</button>
+    </div>
+    <div class="viewing-past-banner" id="viewingPastBanner">
+      ⏰ 正在查看 / 编辑过去日期的数据，所有操作将作用于该日期
+    </div>
   </div>
 
   <!-- 主体 -->
@@ -926,7 +989,7 @@
     <div style="padding: 14px 12px 0;">
       <div class="section-header">
         <div>
-          <div class="section-title">⏱ 今日打卡</div>
+          <div class="section-title" id="punchTitle">⏱ 今日打卡</div>
           <div class="section-sub">快速完成今日任务</div>
         </div>
       </div>
@@ -1085,6 +1148,17 @@ if (!state.completed) state.completed = {};
 
 /* 当前分类 */
 let currentCat = 'all';
+let viewDate = todayKey(); // 当前查看的日期，默认今天；切换到过去日期可查看/编辑那天
+
+// 获取"当前查看日期"（全局）：所有数据读写都用这个，而不是 todayKey()
+function viewDateKey() {
+  return viewDate;
+}
+
+// 判断当前是否在查看今天
+function isViewingToday() {
+  return viewDate === todayKey();
+}
 
 /* =========================
    渲染
@@ -1120,14 +1194,14 @@ function getTasksByCat(cat) {
 
 function isCompletedToday(taskId) {
   const arr = state.completed[taskId] || [];
-  return arr.includes(todayKey());
+  return arr.includes(viewDateKey());
 }
 
 function toggleComplete(taskId) {
   const arr = state.completed[taskId] || [];
-  const idx = arr.indexOf(todayKey());
+  const idx = arr.indexOf(viewDateKey());
   if (idx >= 0) arr.splice(idx, 1);
-  else arr.push(todayKey());
+  else arr.push(viewDateKey());
   state.completed[taskId] = arr;
   saveState();
 }
@@ -1186,7 +1260,7 @@ function addExpense(name, amount) {
     id: 'e' + Date.now() + Math.floor(Math.random()*1000),
     name: name.trim(),
     amount: parseFloat(amount),
-    date: todayKey(),
+    date: viewDateKey(),
     time: String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0')
   });
   saveState();
@@ -1204,7 +1278,7 @@ function deleteExpense(id) {
   saveState();
 }
 function getTodayExpenses() {
-  return state.expenses.filter(e => e.date === todayKey());
+  return state.expenses.filter(e => e.date === viewDateKey());
 }
 function getMonthExpenses() {
   const d = new Date();
@@ -1347,7 +1421,7 @@ if (!state.cookRecords) state.cookRecords = [];
 let cookPreviewPhoto = '';
 
 function getTodayCookRecords() {
-  return state.cookRecords.filter(r => r.date.startsWith(todayKey()));
+  return state.cookRecords.filter(r => r.date.startsWith(viewDateKey()));
 }
 
 function getAllCookRecords() {
@@ -1361,7 +1435,7 @@ function addCookRecord(dish, recipe, photo) {
     dish: dish.trim(),
     recipe: recipe.trim(),
     photo: photo,
-    date: todayKey() + ' ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0')
+    date: viewDateKey() + ' ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0')
   });
   saveState();
 }
@@ -1427,7 +1501,7 @@ function renderCookView() {
     </div>
 
     ${todayList.length > 0 ? `
-      <div class="cook-section-title">🌷 今日作品（${todayList.length} 道）</div>
+      <div class="cook-section-title">🌷 ${isViewingToday() ? '今日' : viewDate} 作品（${todayList.length} 道）</div>
       ${todayList.slice().reverse().map(r => renderCookRecordHTML(r)).join('')}
     ` : ''}
 
@@ -1654,7 +1728,8 @@ function renderProgress() {
   const done = all.filter(t => isCompletedToday(t.id)).length;
   const pct = total === 0 ? 0 : Math.round(done / total * 100);
   document.getElementById('progressRing').textContent = pct + '%';
-  const title = pct === 0 ? '今日还未开始' : (pct === 100 ? '今日已全部完成 🎉' : `今日已完成 ${pct}%`);
+  const prefix = isViewingToday() ? '今日' : (viewDate + ' ');
+  const title = pct === 0 ? prefix + '还未开始' : (pct === 100 ? prefix + '已全部完成 🎉' : `${prefix}已完成 ${pct}%`);
   document.getElementById('progressTitle').textContent = title;
 }
 
@@ -1790,6 +1865,7 @@ function renderHistory(dateKey) {
     <div class="history-summary">
       ${isToday ? '📍 今天' : '📅 ' + dateKey} · 共 <b>${totalCount}</b> 个任务 · 完成 <b>${doneCount}</b> 个 · 完成率 <b>${pct}%</b>
       <div style="font-size:11px;color:#6b7280;margin-top:4px;font-weight:400;">👆 点击任务可补卡 / 取消打卡</div>
+      ${!isToday ? `<button class="news-refresh-btn" style="margin-top:8px;width:100%;" onclick="jumpToDate('${dateKey}')">📝 跳转到此日期编辑</button>` : ''}
     </div>
   `;
 
@@ -1835,16 +1911,22 @@ function renderHistory(dateKey) {
 }
 
 function openHistory() {
-  // 默认显示今天
-  const today = todayKey();
-  document.getElementById('historyDate').value = today;
-  renderQuickDates(today);
-  renderHistory(today);
+  // 默认显示当前 viewDate
+  document.getElementById('historyDate').value = viewDate;
+  renderQuickDates(viewDate);
+  renderHistory(viewDate);
   document.getElementById('historyOverlay').classList.add('active');
 }
 
 function closeHistory() {
   document.getElementById('historyOverlay').classList.remove('active');
+}
+
+// 从历史记录跳转到某日期编辑（关闭面板 + 切换 viewDate）
+function jumpToDate(dateKey) {
+  closeHistory();
+  setViewDate(dateKey);
+  showToast('已切换到 ' + dateKey + '，可编辑那天数据');
 }
 
 function renderQuickDates(activeKey) {
@@ -1879,6 +1961,43 @@ document.getElementById('historyDate').addEventListener('change', (e) => {
   renderQuickDates(e.target.value);
   renderHistory(e.target.value);
 });
+
+/* =========================
+   日期切换器（时间机器）
+   切换 viewDate 后，整个工作台切换到该日期的视图
+   ========================= */
+function setViewDate(dateKey) {
+  viewDate = dateKey;
+  document.getElementById('dsDate').value = dateKey;
+  // 显示/隐藏"查看过去"提示
+  const banner = document.getElementById('viewingPastBanner');
+  if (isViewingToday()) {
+    banner.classList.remove('show');
+  } else {
+    banner.classList.add('show');
+  }
+  // 刷新所有视图
+  renderTasks();
+  renderProgress();
+  // 如果当前在备忘/打卡视图，也刷新
+  if (currentTab === 'memo') renderMemoView();
+  if (currentTab === 'punch') renderPunchView();
+}
+
+function shiftDate(days) {
+  const d = new Date(viewDate + 'T00:00:00');
+  d.setDate(d.getDate() + days);
+  setViewDate(formatDateKey(d));
+}
+
+// 初始化日期选择器为今天
+document.getElementById('dsDate').value = todayKey();
+document.getElementById('dsDate').addEventListener('change', (e) => {
+  setViewDate(e.target.value);
+});
+document.getElementById('dsPrev').addEventListener('click', () => shiftDate(-1));
+document.getElementById('dsNext').addEventListener('click', () => shiftDate(1));
+document.getElementById('dsToday').addEventListener('click', () => setViewDate(todayKey()));
 
 /* =========================
    底部 Tab 视图切换
@@ -1923,7 +2042,7 @@ function saveMemo() {
   state.memos.push({
     id: 'm' + Date.now() + Math.floor(Math.random()*1000),
     content, tag,
-    date: todayKey() + ' ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0')
+    date: viewDateKey() + ' ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0')
   });
   saveState();
   document.getElementById('memoContent').value = '';
@@ -2004,6 +2123,9 @@ document.getElementById('saveMemoBtn').addEventListener('click', saveMemo);
    打卡专注视图
    ========================= */
 function renderPunchView() {
+  // 更新打卡视图标题
+  const punchTitleEl = document.getElementById('punchTitle');
+  if (punchTitleEl) punchTitleEl.textContent = isViewingToday() ? '⏱ 今日打卡' : '⏱ ' + viewDate + ' 打卡';
   const cats = ['daily','trade','logistics','study','cook','news','finance'];
   const items = [];
   cats.forEach(k => {
