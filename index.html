@@ -462,6 +462,102 @@
   .fin-total .lbl { font-size: 13px; color: #92400e; }
   .fin-total .val { font-size: 18px; font-weight: 700; color: #b91c1c; }
 
+  /* ====== 财务管理页面增强 ====== */
+  .fin-tabs {
+    display: flex; gap: 6px; margin-top: 10px;
+    background: #fff; border-radius: 10px; padding: 4px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  }
+  .fin-tab {
+    flex: 1; padding: 6px; text-align: center;
+    border-radius: 6px; font-size: 12px; color: #6b7280;
+    transition: all 0.15s;
+  }
+  .fin-tab.active { background: #1f6f6c; color: #fff; font-weight: 600; }
+
+  .fin-overview {
+    display: flex; gap: 8px; margin-top: 10px;
+  }
+  .fin-overview-card {
+    flex: 1;
+    border-radius: 12px;
+    padding: 12px;
+    text-align: center;
+  }
+  .fin-overview-card.expense { background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); border: 1px solid #fecaca; }
+  .fin-overview-card.income { background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border: 1px solid #bbf7d0; }
+  .fin-overview-card.balance { background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border: 1px solid #bfdbfe; }
+  .fin-overview-card .lbl { font-size: 11px; margin-bottom: 4px; }
+  .fin-overview-card.expense .lbl { color: #991b1b; }
+  .fin-overview-card.income .lbl { color: #166534; }
+  .fin-overview-card.balance .lbl { color: #1e40af; }
+  .fin-overview-card .amt { font-size: 17px; font-weight: 700; }
+  .fin-overview-card.expense .amt { color: #dc2626; }
+  .fin-overview-card.income .amt { color: #16a34a; }
+  .fin-overview-card.balance .amt { color: #2563eb; }
+  .fin-overview-card .sub { font-size: 10px; color: #6b7280; margin-top: 2px; }
+
+  /* 月度柱状图 */
+  .fin-chart-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 14px;
+    margin-top: 10px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  }
+  .fin-chart-title {
+    font-size: 13px; font-weight: 600; color: #374151;
+    margin-bottom: 12px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .fin-chart-legend { font-size: 11px; font-weight: 400; color: #6b7280; }
+  .fin-chart-legend .dot { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin: 0 2px 0 6px; vertical-align: middle; }
+  .fin-chart-bars {
+    display: flex; align-items: flex-end; gap: 4px;
+    height: 140px;
+    padding: 0 4px;
+    border-bottom: 1px solid #e5e7eb;
+    overflow-x: auto;
+  }
+  .fin-bar-group {
+    flex: 1; min-width: 28px;
+    display: flex; flex-direction: column; align-items: center;
+    height: 100%;
+    position: relative;
+  }
+  .fin-bar-wrap {
+    flex: 1; width: 100%;
+    display: flex; align-items: flex-end; justify-content: center; gap: 2px;
+  }
+  .fin-bar {
+    width: 8px; border-radius: 3px 3px 0 0;
+    transition: height 0.3s;
+    min-height: 2px;
+    position: relative;
+  }
+  .fin-bar.expense { background: linear-gradient(180deg, #f87171 0%, #dc2626 100%); }
+  .fin-bar.income { background: linear-gradient(180deg, #4ade80 0%, #16a34a 100%); }
+  .fin-bar-value {
+    position: absolute; top: -16px; left: 50%; transform: translateX(-50%);
+    font-size: 9px; color: #6b7280; white-space: nowrap;
+  }
+  .fin-bar-label {
+    font-size: 10px; color: #6b7280; margin-top: 4px;
+  }
+  .fin-bar-label.current { color: #1f6f6c; font-weight: 600; }
+
+  /* 收支切换标签 */
+  .fin-type-toggle {
+    display: flex; gap: 4px; margin-bottom: 8px;
+  }
+  .fin-type-toggle button {
+    flex: 1; padding: 6px;
+    border-radius: 8px; font-size: 12px;
+    background: #f3f4f6; color: #6b7280;
+  }
+  .fin-type-toggle button.active.exp { background: #fee2e2; color: #dc2626; font-weight: 600; }
+  .fin-type-toggle button.active.inc { background: #dcfce7; color: #16a34a; font-weight: 600; }
+
   /* ====== 新闻列表 ====== */
   .news-meta-bar {
     display: flex; justify-content: space-between; align-items: center;
@@ -1139,6 +1235,8 @@ if (!state) {
   saveState();
 }
 if (!state.expenses) state.expenses = [];
+// 兼容老数据：给没有 type 的 expenses 补上默认 type
+state.expenses.forEach(e => { if (!e.type) e.type = 'expense'; });
 
 // 兼容老数据：若 default 缺失则补齐
 ['trade','news','logistics','study','cook','finance','daily'].forEach(k => {
@@ -1253,13 +1351,14 @@ function updateTask(cat, taskId, newTitle, newTime) {
    财务明细
    expenses: [{ id, name, amount, date: 'YYYY-MM-DD', time: 'HH:mm' }]
    ========================= */
-function addExpense(name, amount) {
+function addExpense(name, amount, type) {
   if (!name.trim() || isNaN(amount) || amount === '') return;
   const d = new Date();
   state.expenses.push({
     id: 'e' + Date.now() + Math.floor(Math.random()*1000),
     name: name.trim(),
     amount: parseFloat(amount),
+    type: type || 'expense', // expense=支出, income=收入
     date: viewDateKey(),
     time: String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0')
   });
@@ -1287,6 +1386,44 @@ function getMonthExpenses() {
 }
 function sumExpenses(list) {
   return list.reduce((s, e) => s + (e.amount || 0), 0);
+}
+
+// 按类型过滤（expense/income）
+function getExpensesByType(type) {
+  return state.expenses.filter(e => (e.type || 'expense') === type);
+}
+
+// 获取某月的所有记录
+function getMonthExpensesByDate(yearMonth) {
+  return state.expenses.filter(e => e.date && e.date.startsWith(yearMonth));
+}
+
+// 获取最近 N 个月的月度统计 [{month: '2026-07', expense, income, balance}]
+function getMonthlyStats(months) {
+  const result = [];
+  const now = new Date();
+  for (let i = months - 1; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const ym = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+    const list = getMonthExpensesByDate(ym);
+    const exp = sumExpenses(list.filter(e => (e.type||'expense') === 'expense'));
+    const inc = sumExpenses(list.filter(e => e.type === 'income'));
+    result.push({ month: ym, monthLabel: (d.getMonth()+1) + '月', expense: exp, income: inc, balance: inc - exp, count: list.length });
+  }
+  return result;
+}
+
+// 累计统计
+function getTotalStats() {
+  const allExpenses = getExpensesByType('expense');
+  const allIncome = getExpensesByType('income');
+  return {
+    totalExpense: sumExpenses(allExpenses),
+    totalIncome: sumExpenses(allIncome),
+    totalBalance: sumExpenses(allIncome) - sumExpenses(allExpenses),
+    expenseCount: allExpenses.length,
+    incomeCount: allIncome.length
+  };
 }
 
 function renderTasks() {
@@ -1610,64 +1747,136 @@ async function renderNewsView() {
 /* =========================
    财务管理专属渲染
    ========================= */
+let finRecordType = 'expense'; // 当前记账类型：expense / income
+
 function renderFinanceView() {
-  document.getElementById('sectionSub').textContent = '记录每笔支出 · 自动汇总';
+  document.getElementById('sectionSub').textContent = '收支记录 · 月度统计 · 图表分析';
 
   const wrap = document.getElementById('taskList');
   const todayList = getTodayExpenses();
-  const todayTotal = sumExpenses(todayList);
-  const monthList = getMonthExpenses();
-  const monthTotal = sumExpenses(monthList);
+  const todayExp = sumExpenses(todayList.filter(e => (e.type||'expense') === 'expense'));
+  const todayInc = sumExpenses(todayList.filter(e => e.type === 'income'));
+
+  // 当前查看的月份
+  const viewMonthPrefix = viewDate.substring(0, 7); // YYYY-MM
+  const viewMonthList = getMonthExpensesByDate(viewMonthPrefix);
+  const viewMonthExp = sumExpenses(viewMonthList.filter(e => (e.type||'expense') === 'expense'));
+  const viewMonthInc = sumExpenses(viewMonthList.filter(e => e.type === 'income'));
+  const viewMonthBal = viewMonthInc - viewMonthExp;
+
+  // 累计统计
+  const totals = getTotalStats();
+
+  // 最近 6 个月月度统计
+  const monthly = getMonthlyStats(6);
+  const maxVal = Math.max(...monthly.map(m => Math.max(m.expense, m.income)), 100);
 
   wrap.innerHTML = `
-    <div class="finance-summary">
-      <div class="fin-card">
-        <div class="label">今日支出</div>
-        <div class="amount">¥${todayTotal.toFixed(2)}</div>
-        <div class="sub">${todayList.length} 笔记录</div>
+    <!-- 累计概览 -->
+    <div class="fin-overview">
+      <div class="fin-overview-card expense">
+        <div class="lbl">累计总支出</div>
+        <div class="amt">¥${totals.totalExpense.toFixed(2)}</div>
+        <div class="sub">${totals.expenseCount} 笔</div>
       </div>
-      <div class="fin-card">
-        <div class="label">本月支出</div>
-        <div class="amount">¥${monthTotal.toFixed(2)}</div>
-        <div class="sub">${monthList.length} 笔记录</div>
+      <div class="fin-overview-card income">
+        <div class="lbl">累计总收入</div>
+        <div class="amt">¥${totals.totalIncome.toFixed(2)}</div>
+        <div class="sub">${totals.incomeCount} 笔</div>
+      </div>
+      <div class="fin-overview-card balance">
+        <div class="lbl">总结余</div>
+        <div class="amt" style="color:${totals.totalBalance >= 0 ? '#2563eb' : '#dc2626'}">¥${totals.totalBalance.toFixed(2)}</div>
+        <div class="sub">${totals.totalBalance >= 0 ? '盈余' : '亏损'}</div>
       </div>
     </div>
 
-    <div class="expense-input-bar">
+    <!-- 月度柱状图 -->
+    <div class="fin-chart-card">
+      <div class="fin-chart-title">
+        <span>📊 近 6 个月收支</span>
+        <span class="fin-chart-legend">
+          <span class="dot" style="background:#dc2626"></span>支出
+          <span class="dot" style="background:#16a34a;margin-left:6px"></span>收入
+        </span>
+      </div>
+      <div class="fin-chart-bars">
+        ${monthly.map(m => `
+          <div class="fin-bar-group">
+            <div class="fin-bar-wrap">
+              ${m.income > 0 ? `<div class="fin-bar income" style="height:${(m.income/maxVal*100).toFixed(1)}%" title="收入 ¥${m.income.toFixed(2)}"><div class="fin-bar-value">${m.income > 0 ? m.income.toFixed(0) : ''}</div></div>` : ''}
+              ${m.expense > 0 ? `<div class="fin-bar expense" style="height:${(m.expense/maxVal*100).toFixed(1)}%" title="支出 ¥${m.expense.toFixed(2)}"><div class="fin-bar-value">${m.expense > 0 ? m.expense.toFixed(0) : ''}</div></div>` : ''}
+            </div>
+            <div class="fin-bar-label ${m.month === viewMonthPrefix ? 'current' : ''}">${m.monthLabel}</div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+
+    <!-- 当前查看月份汇总 -->
+    <div class="finance-summary" style="margin-top:10px;">
+      <div class="fin-card">
+        <div class="label">${viewMonthPrefix === todayKey().substring(0,7) ? '本月' : viewMonthPrefix} 支出</div>
+        <div class="amount" style="color:#dc2626">¥${viewMonthExp.toFixed(2)}</div>
+        <div class="sub">${viewMonthList.filter(e=>(e.type||'expense')==='expense').length} 笔</div>
+      </div>
+      <div class="fin-card">
+        <div class="label">${viewMonthPrefix === todayKey().substring(0,7) ? '本月' : viewMonthPrefix} 收入</div>
+        <div class="amount" style="color:#16a34a">¥${viewMonthInc.toFixed(2)}</div>
+        <div class="sub">${viewMonthList.filter(e=>e.type==='income').length} 笔</div>
+      </div>
+      <div class="fin-card">
+        <div class="label">本月结余</div>
+        <div class="amount" style="color:${viewMonthBal>=0?'#2563eb':'#dc2626'}">¥${viewMonthBal.toFixed(2)}</div>
+        <div class="sub">${viewMonthBal>=0?'盈余':'亏损'}</div>
+      </div>
+    </div>
+
+    <!-- 记账输入 -->
+    <div class="expense-input-bar" style="margin-top:12px;">
+      <div class="fin-type-toggle">
+        <button class="active exp" data-type="expense" id="typeExp">💸 支出</button>
+        <button data-type="income" id="typeInc">💰 收入</button>
+      </div>
       <div class="row">
-        <input type="text" class="name" id="expName" placeholder="买了什么？" maxlength="30" />
+        <input type="text" class="name" id="expName" placeholder="${finRecordType === 'income' ? '收入来源（如工资/红包）' : '买了什么？'}" maxlength="30" />
         <input type="number" class="amt" id="expAmt" placeholder="¥金额" step="0.01" min="0" />
         <button class="add-exp" id="addExpBtn">＋ 记账</button>
       </div>
     </div>
 
-    <div class="fin-section-title">📋 今日支出明细（${todayList.length} 笔）</div>
+    <!-- 今日明细 -->
+    <div class="fin-section-title">📋 ${isViewingToday() ? '今日' : viewDate} 明细（${todayList.length} 笔）</div>
     <div id="expList"></div>
   `;
 
+  // 渲染明细列表
   const expListEl = document.getElementById('expList');
   if (todayList.length === 0) {
-    expListEl.innerHTML = `<div class="empty">今天还没有记账，记一笔吧 👆</div>`;
+    expListEl.innerHTML = `<div class="empty">${isViewingToday() ? '今天' : viewDate}还没有记账，记一笔吧 👆</div>`;
   } else {
-    expListEl.innerHTML = todayList.slice().reverse().map(e => `
-      <div class="expense-card" data-id="${e.id}">
-        <div class="row">
-          <div class="name">${escapeHtml(e.name)}</div>
-          <div class="amt">-¥${e.amount.toFixed(2)}</div>
-          <div class="actions">
-            <button data-action="e-edit" title="编辑">✏️</button>
-            <button data-action="e-del" title="删除">🗑️</button>
+    expListEl.innerHTML = todayList.slice().reverse().map(e => {
+      const isInc = e.type === 'income';
+      return `
+        <div class="expense-card" data-id="${e.id}" style="${isInc ? 'border-left:3px solid #16a34a;' : ''}">
+          <div class="row">
+            <div class="name">${isInc ? '💰 ' : ''}${escapeHtml(e.name)}</div>
+            <div class="amt" style="color:${isInc ? '#16a34a' : '#ef4444'}">${isInc ? '+' : '-'}¥${e.amount.toFixed(2)}</div>
+            <div class="actions">
+              <button data-action="e-edit" title="编辑">✏️</button>
+              <button data-action="e-del" title="删除">🗑️</button>
+            </div>
+          </div>
+          <div class="meta">${e.time} · ${e.date} · ${isInc ? '收入' : '支出'}</div>
+          <div class="edit-inline">
+            <input type="text" class="e-name" value="${escapeHtml(e.name)}" maxlength="30" />
+            <input type="number" class="e-amt" value="${e.amount}" step="0.01" min="0" />
+            <button class="ok" data-action="e-save">✓</button>
+            <button class="no" data-action="e-cancel">✕</button>
           </div>
         </div>
-        <div class="meta">${e.time} · ${e.date}</div>
-        <div class="edit-inline">
-          <input type="text" class="e-name" value="${escapeHtml(e.name)}" maxlength="30" />
-          <input type="number" class="e-amt" value="${e.amount}" step="0.01" min="0" />
-          <button class="ok" data-action="e-save">✓</button>
-          <button class="no" data-action="e-cancel">✕</button>
-        </div>
-      </div>
-    `).join('');
+      `;
+    }).join('');
 
     expListEl.querySelectorAll('.expense-card').forEach(card => {
       const id = card.dataset.id;
@@ -1684,30 +1893,41 @@ function renderFinanceView() {
         if (!n) { showToast('名称不能为空'); return; }
         updateExpense(id, n, a);
         renderFinanceView();
-        renderFinanceSummary();
         showToast('已更新');
       });
       card.querySelector('[data-action="e-del"]').addEventListener('click', () => {
-        if (confirm('删除这笔支出？')) {
+        if (confirm('删除这笔记录？')) {
           deleteExpense(id);
           renderFinanceView();
-          renderFinanceSummary();
           showToast('已删除');
         }
       });
     });
   }
 
+  // 收支类型切换
+  document.getElementById('typeExp').addEventListener('click', () => {
+    finRecordType = 'expense';
+    document.getElementById('typeExp').classList.add('active');
+    document.getElementById('typeInc').classList.remove('active');
+    document.getElementById('expName').placeholder = '买了什么？';
+  });
+  document.getElementById('typeInc').addEventListener('click', () => {
+    finRecordType = 'income';
+    document.getElementById('typeInc').classList.add('active');
+    document.getElementById('typeExp').classList.remove('active');
+    document.getElementById('expName').placeholder = '收入来源（如工资/红包）';
+  });
+
   // 绑定新增按钮
   document.getElementById('addExpBtn').addEventListener('click', () => {
     const name = document.getElementById('expName').value.trim();
     const amt = document.getElementById('expAmt').value;
-    if (!name) { showToast('请输入买了什么'); return; }
+    if (!name) { showToast('请输入名称'); return; }
     if (!amt || isNaN(amt)) { showToast('请输入金额'); return; }
-    addExpense(name, amt);
+    addExpense(name, amt, finRecordType);
     renderFinanceView();
-    renderFinanceSummary();
-    showToast('已记账');
+    showToast(finRecordType === 'income' ? '已记收入' : '已记账');
   });
   document.getElementById('expName').addEventListener('keydown', (e) => {
     if (e.key === 'Enter') document.getElementById('expAmt').focus();
